@@ -112,7 +112,6 @@ fun ScanScreen(
     )
     Box(modifier = Modifier
         .fillMaxSize()
-        .background(Color.Black)
         .graphicsLayer { alpha = enterAlpha }
         .imePadding()) {
         // Camera always on

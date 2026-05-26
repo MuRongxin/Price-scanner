@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalDensity
@@ -97,6 +98,13 @@ class MainActivity : ComponentActivity() {
                         val buttonRadiusPx = with(density) { 56.dp.toPx() }
                         // 随机选择展开圆心：0=按钮中心，1-4=四个角落
                         val cornerChoice = remember { Random.nextInt(5) }
+                        // 随机浅色背景（相机预热期间的底色）
+                        val lightColors = listOf(
+                            Color(0xFFE3F2FD), Color(0xFFFCE4EC),
+                            Color(0xFFE8F5E9), Color(0xFFFFF3E0),
+                            Color(0xFFF3E5F5), Color(0xFFE0F7FA),
+                        )
+                        val bgColor = remember { lightColors.random() }
 
                         LaunchedEffect(closingScanner, showScanner) {
                             if (!closingScanner) {
@@ -123,6 +131,7 @@ class MainActivity : ComponentActivity() {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
+                                .background(bgColor)
                                 .drawWithContent {
                                     if (progress < 0.999f) {
                                         val cx = when (cornerChoice) {
