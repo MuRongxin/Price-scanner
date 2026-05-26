@@ -131,7 +131,6 @@ class MainActivity : ComponentActivity() {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(bgColor)
                                 .drawWithContent {
                                     if (progress < 0.999f) {
                                         val cx = when (cornerChoice) {
@@ -168,6 +167,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         clipPath(path) {
+                                            drawRect(bgColor, Offset.Zero, size)
                                             this@drawWithContent.drawContent()
                                         }
                                     } else {
