@@ -31,6 +31,7 @@ import com.pricescanner.app.ui.scan.ScanScreen
 import com.pricescanner.app.ui.theme.PriceScannerTheme
 import com.pricescanner.app.ui.theme.Slate50
 import kotlin.math.hypot
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
@@ -55,7 +56,25 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = editingBarcode != null) { editingBarcode = null }
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    // Layer 1: Pager ↔ Edit via AnimatedContent
+                    // Layer 1: Pager — always present, never wrapped in animations
+                    HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = !showScanner && editingBarcode == null,
+                        modifier = Modifier.fillMaxSize().background(Slate50)
+                    ) { page ->
+                        when (page % 2) {
+                            0 -> ScanHomePage(onScanClick = { center ->
+                                scanButtonCenter = center
+                                showScanner = true
+                            })
+                            1 -> ProductListScreen(
+                                onEditProduct = { barcode -> editingBarcode = barcode },
+                                onManualAdd = { editingBarcode = "" }
+                            )
+                        }
+                    }
+
+                    // Layer 2: Edit screen overlay
                     AnimatedContent(
                         targetState = editingBarcode != null,
                         transitionSpec = {
@@ -68,35 +87,19 @@ class MainActivity : ComponentActivity() {
                                 productBarcode = editingBarcode ?: "",
                                 onBack = { editingBarcode = null }
                             )
-                        } else {
-                            HorizontalPager(
-                                state = pagerState,
-                                userScrollEnabled = !showScanner,
-                                modifier = Modifier.fillMaxSize().background(Slate50)
-                            ) { page ->
-                                when (page % 2) {
-                                    0 -> ScanHomePage(onScanClick = { center ->
-                                        scanButtonCenter = center
-                                        showScanner = true
-                                    })
-                                    1 -> ProductListScreen(
-                                        onEditProduct = { barcode -> editingBarcode = barcode },
-                                        onManualAdd = { editingBarcode = "" }
-                                    )
-                                }
-                            }
                         }
                     }
 
-                    // Layer 2: Scanner on top of pager, iris‑expand on open / iris‑out on close
+                    // Layer 3: Scanner on top of pager, iris‑expand on open / iris‑out on close
                     if (showScanner) {
                         val clipProgress = remember { Animatable(0f) }
                         val density = LocalDensity.current
                         val buttonRadiusPx = with(density) { 56.dp.toPx() }
+                        // 随机选择展开圆心：0=按钮中心，1-4=四个角落
+                        val cornerChoice = remember { Random.nextInt(5) }
 
                         LaunchedEffect(closingScanner, showScanner) {
                             if (!closingScanner) {
-                                // 进入：从按钮大小展开到全屏
                                 scannerAnimating = true
                                 clipProgress.snapTo(0f)
                                 clipProgress.animateTo(
@@ -105,7 +108,6 @@ class MainActivity : ComponentActivity() {
                                 )
                                 scannerAnimating = false
                             } else {
-                                // 离开：从全屏收缩到按钮大小
                                 scannerAnimating = true
                                 clipProgress.animateTo(
                                     0f,
@@ -123,8 +125,22 @@ class MainActivity : ComponentActivity() {
                                 .fillMaxSize()
                                 .drawWithContent {
                                     if (progress < 0.999f) {
-                                        val cx = scanButtonCenter?.x ?: (size.width / 2f)
-                                        val cy = scanButtonCenter?.y ?: (size.height / 2f)
+                                        val cx = when (cornerChoice) {
+                                            0 -> scanButtonCenter?.x ?: (size.width / 2f)
+                                            1 -> 0f
+                                            2 -> size.width
+                                            3 -> 0f
+                                            4 -> size.width
+                                            else -> scanButtonCenter?.x ?: (size.width / 2f)
+                                        }
+                                        val cy = when (cornerChoice) {
+                                            0 -> scanButtonCenter?.y ?: (size.height / 2f)
+                                            1 -> 0f
+                                            2 -> 0f
+                                            3 -> size.height
+                                            4 -> size.height
+                                            else -> scanButtonCenter?.y ?: (size.height / 2f)
+                                        }
                                         val maxRadius = maxOf(
                                             hypot(cx, cy),
                                             hypot(size.width - cx, cy),
